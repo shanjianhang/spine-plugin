@@ -1,0 +1,40 @@
+{
+  "name": "spine-plugin",
+  "version": "1.0.0",
+  "description": "基于 @esotericsoftware/spine-webgl 的通用 Spine 动画插件 — 单包引入，开箱即用",
+  "type": "module",
+  "main": "dist/spine-plugin.umd.cjs",
+  "module": "dist/spine-plugin.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/spine-plugin.js",
+      "require": "./dist/spine-plugin.umd.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "spine",
+    "spine-webgl",
+    "spine-animation",
+    "webgl",
+    "animation"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@esotericsoftware/spine-webgl": "^4.2.67"
+  },
+  "devDependencies": {
+    "terser": "^5.48.0",
+    "vite": "^5.0.0"
+  }
+}
