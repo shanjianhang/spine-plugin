@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpinePlugin 完整功能演示</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      padding: 20px;
+    }
+    .app {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    /* ===== 状态栏 ===== */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #52c41a;
+      flex-shrink: 0;
+    }
+    .status-dot.error { background: #ff4d4f; }
+    .status-text { flex: 1; color: #666; }
+    .spine-count { color: #999; font-size: 12px; }
+
+    /* ===== Canvas 容器 ===== */
+    .canvas-container {
+      width: 100%;
+      height: 300px;
+      background: #1a1a2e;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    /* ===== 控制组 ===== */
+    .control-group {
+      margin-bottom: 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .group-title {
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      background: #fafafa;
+      cursor: pointer;
+      user-select: none;
+    }
+    .group-title:hover { background: #f0f0f0; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+
+    /* ===== 按钮 ===== */
+    .btn {
+      padding: 6px 14px;
+      font-size: 13px;
+      border: none;
+      border-radius: 5px;
+      background: #1890ff;
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-danger { background: #ff4d4f; }
+    .btn-small { padding: 4px 10px; font-size: 12px; }
+    .btn-outline {
+      background: transparent;
+      color: #1890ff;
+      border: 1px solid #1890ff;
+    }
+    .btn-outline:hover:not(:disabled) { background: #e6f7ff; }
+
+    /* ===== 控制行 ===== */
+    .control-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-top: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+    }
+    .control-label {
+      font-size: 13px;
+      color: #333;
+      font-weight: 500;
+      min-width: 120px;
+    }
+    .control-hint {
+      font-size: 12px;
+      color: #999;
+      min-width: 40px;
+    }
+    .range-text { font-size: 12px; color: #666; }
+
+    input[type="range"] {
+      flex: 1;
+      max-width: 160px;
+      height: 8px;
+      cursor: pointer;
+      accent-color: #1890ff;
+    }
+    input[type="number"] {
+      width: 60px;
+      padding: 3px 6px;
+      font-size: 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 3px;
+      text-align: center;
+      outline: none;
+    }
+    input[type="number"]:focus {
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+    }
+    input[type="text"] {
+      flex: 1;
+      max-width: 180px;
+      padding: 3px 6px;
+      font-size: 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 3px;
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+    }
+
+    /* ===== 事件日志 ===== */
+    .event-log {
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 6px 12px;
+      border-top: 1px solid #f0f0f0;
+      background: #fafafa;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+    }
+    .log-empty { color: #ccc; text-align: center; padding: 8px; }
+    .log-item {
+      display: flex;
+      gap: 6px;
+      padding: 2px 0;
+      line-height: 1.4;
+    }
+    .log-time { color: #999; flex-shrink: 0; }
+    .log-msg  { flex: 1; }
+    .log-info    .log-msg { color: #333; }
+    .log-success .log-msg { color: #52c41a; }
+    .log-warn    .log-msg { color: #faad14; }
+    .log-error   .log-msg { color: #ff4d4f; }
+    .log-event   .log-msg { color: #1890ff; }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* ===== API 速查 ===== */
+    .api-ref {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .api-item {
+      font-size: 12px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 6px 8px;
+      line-height: 1.6;
+    }
+    .api-sig {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: #1890ff;
+      word-break: break-all;
+    }
+    .api-desc {
+      color: #555;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .api-param {
+      color: #999;
+      font-size: 11px;
+      margin-top: 1px;
+    }
+    .api-param code {
+      font-family: 'Courier New', monospace;
+      color: #666;
+      background: #e8e8e8;
+      padding: 0 3px;
+      border-radius: 2px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>SpinePlugin 完整功能演示</h1>
+
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">初始化中...</span>
+      <span class="spine-count">Spine 数量: <span id="spine-count">0</span></span>
+    </div>
+
+    <!-- Canvas 容器 -->
+    <div class="canvas-container" id="canvas-container"></div>
+
+    <!-- 1. Spine 管理 -->
+    <details class="control-group" open>
+      <summary class="group-title">📦 Spine 管理</summary>
+      <div class="controls">
+        <button class="btn" id="btn-init">初始化插件</button>
+        <button class="btn btn-danger" id="btn-destroy">销毁</button>
+      </div>
+      <div class="controls">
+        <button class="btn" id="btn-add-second">添加第二个 Spine（单次）</button>
+        <button class="btn" id="btn-add-third">添加第三个 Spine（百分比定位）</button>
+        <button class="btn btn-danger" id="btn-remove-second">移除第二个 Spine</button>
+        <button class="btn btn-danger" id="btn-remove-third">移除第三个 Spine</button>
+      </div>
+    </details>
+
+    <!-- 2. 动画控制 -->
+    <details class="control-group" open>
+      <summary class="group-title">🎬 动画控制</summary>
+      <div class="controls">
+        <button class="btn" id="btn-toggle-loop">🔄 循环中 — 点击切换</button>
+        <button class="btn" id="btn-toggle-autofit">📐 autoFit 已开启 — 点击切换</button>
+      </div>
+
+      <!-- playAnimation -->
+      <div class="control-section">
+        <span class="control-label">▶️ playAnimation:</span>
+        <input type="text" id="input-anim-name" placeholder="输入动画名称" />
+        <button class="btn btn-small" id="btn-switch-anim">切换动画</button>
+      </div>
+
+      <!-- addAnimation -->
+      <div class="control-section">
+        <span class="control-label">⏭️ addAnimation (队列):</span>
+        <input type="text" id="input-queue-name" placeholder="输入队列动画名称" />
+        <button class="btn btn-small" id="btn-queue-anim">加入队列</button>
+      </div>
+    </details>
+
+    <!-- 3. 变换控制 -->
+    <details class="control-group" open>
+      <summary class="group-title">⚙️ 变换控制</summary>
+
+      <!-- 位置 -->
+      <div class="control-section">
+        <span class="control-label">📍 setPosition:</span>
+        <span class="range-text">X</span>
+        <input type="number" id="input-pos-x" value="0" />
+        <span class="range-text">Y</span>
+        <input type="number" id="input-pos-y" value="0" />
+        <button class="btn btn-small" id="btn-apply-pos">应用</button>
+        <button class="btn btn-small btn-outline" id="btn-pos-center">居中 (50%)</button>
+      </div>
+
+      <!-- 缩放 -->
+      <div class="control-section">
+        <span class="control-label">🔍 setScale:</span>
+        <input type="range" id="range-scale" min="0.1" max="5" step="0.1" value="1" />
+        <input type="number" id="input-scale" min="0.1" max="10" step="0.1" value="1" />
+        <span class="control-hint" id="hint-scale">1.0x</span>
+      </div>
+
+      <!-- 速度 -->
+      <div class="control-section">
+        <span class="control-label">⏩ setSpeed:</span>
+        <input type="range" id="range-speed" min="0.1" max="5" step="0.1" value="1" />
+        <input type="number" id="input-speed" min="0.1" max="10" step="0.1" value="1" />
+        <span class="control-hint" id="hint-speed">1x</span>
+      </div>
+
+      <!-- 播放范围 -->
+      <div class="control-section">
+        <span class="control-label">✂️ setPlayRange:</span>
+        <span class="range-text">从</span>
+        <input type="number" id="input-range-from" min="0" max="99" step="1" value="0" />
+        <span class="range-text">% 到</span>
+        <input type="number" id="input-range-to" min="1" max="100" step="1" value="100" />
+        <span class="range-text">%</span>
+        <button class="btn btn-small" id="btn-apply-range">应用</button>
+      </div>
+    </details>
+
+    <!-- 4. 事件管理 -->
+    <details class="control-group">
+      <summary class="group-title">🔔 事件管理</summary>
+      <div class="controls">
+        <button class="btn" id="btn-toggle-listener">添加 complete 监听 B</button>
+        <button class="btn btn-outline" id="btn-clear-logs">清除日志</button>
+        <label class="toggle-label">
+          <input type="checkbox" id="chk-show-log" checked />
+          显示事件日志
+        </label>
+      </div>
+      <div class="event-log" id="event-log">
+        <div class="log-empty">暂无事件日志</div>
+      </div>
+    </details>
+
+    <!-- 5. API 速查 -->
+    <details class="control-group">
+      <summary class="group-title">📖 API 速查</summary>
+      <div class="api-ref">
+
+        <div class="api-item">
+          <div class="api-sig">constructor(container, options?)</div>
+          <div class="api-desc">创建 SpinePlugin 实例，创建 WebGL canvas 并挂载到容器中</div>
+          <div class="api-param">
+            <code>container</code> string|HTMLElement — CSS 选择器（如 "#myId"）或 DOM 元素<br>
+            <code>options.format</code> 'json' | 'binary' — spine 数据格式，默认 'json'<br>
+            <code>options.backgroundColor</code> string — canvas 背景色，默认 'rgba(0,0,0,0)'<br>
+            <code>options.autoResize</code> boolean — 自动监听容器大小变化，默认 true
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">await plugin.init()</div>
+          <div class="api-desc">初始化渲染环境（WebGL 上下文、SceneRenderer、AssetManager），必须在 addSpine 之前调用</div>
+          <div class="api-param">返回 Promise<void></div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">await plugin.addSpine(id, config)</div>
+          <div class="api-desc">加载 spine 资源并添加到场景中。id 必须唯一，重复添加会抛出异常</div>
+          <div class="api-param">
+            <code>id</code> string — 唯一标识，后续所有操作都通过此 id 引用<br>
+            <code>config.jsonUrl</code> string — .json 文件 URL（必填）<br>
+            <code>config.atlasUrl</code> string — .atlas 文件 URL（必填）<br>
+            <code>config.x</code> number|string — x 偏移，支持百分比如 '50%'，默认 0<br>
+            <code>config.y</code> number|string — y 偏移，支持百分比如 '50%'，默认 0<br>
+            <code>config.scale</code> number — 缩放比例，默认 1<br>
+            <code>config.loop</code> boolean — 是否循环播放，默认 true<br>
+            <code>config.animationName</code> string — 初始播放的动画名，默认 null（不自动播放）<br>
+            <code>config.speed</code> number — 播放速度倍率，默认 1<br>
+            <code>config.playFrom</code> number — 播放起始百分比 0-100，默认 0<br>
+            <code>config.playTo</code> number — 播放结束百分比 0-100，默认 100<br>
+            <code>config.autoFit</code> boolean — 自动适配 canvas 大小，默认 true<br>
+            <code>config.premultipliedAlpha</code> boolean — 预乘 Alpha，默认 true<br>
+            <code>config.virtualViewport</code> object|null — 虚拟视口 { width, height }，默认 null
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.playAnimation(id, animationName, loop?)</div>
+          <div class="api-desc">立即播放指定动画，替换当前轨道的动画。如果当前有动画正在播放，会被中断并触发 interrupt 事件</div>
+          <div class="api-param">
+            <code>id</code> string — spine 标识<br>
+            <code>animationName</code> string — 动画名称<br>
+            <code>loop</code> boolean — 是否循环，不传则使用 addSpine 时的 loop 配置
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.addAnimation(id, animationName, loop?, delay?)</div>
+          <div class="api-desc">
+            将动画加入播放队列，当前动画播放完后自动切换到队列中的下一个动画（依次播放）。<br>
+            <strong>loop 行为说明：</strong>
+            <ul style="margin:2px 0 0 16px;padding:0;">
+              <li>如果 <code>loop=false</code>（默认），该动画播放一次后自动切换到队列中下一个动画</li>
+              <li>如果 <code>loop=true</code>，该动画会<strong>一直循环</strong>，队列中后续的动画将<strong>不会</strong>被播放</li>
+              <li>如果需要无限循环播放队列，需监听 complete 事件，在回调中重新 addAnimation</li>
+            </ul>
+          </div>
+          <div class="api-param">
+            <code>id</code> string — spine 标识<br>
+            <code>animationName</code> string — 动画名称<br>
+            <code>loop</code> boolean — 是否循环，默认 false<br>
+            <code>delay</code> number — 延迟秒数（相对当前动画结束时间），默认 0
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.setPosition(id, x, y)</div>
+          <div class="api-desc">设置 spine 在 canvas 中的位置偏移</div>
+          <div class="api-param">
+            <code>x</code> number|string — 支持数值或百分比如 '50%'<br>
+            <code>y</code> number|string — 支持数值或百分比如 '50%'
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.setScale(id, scale)</div>
+          <div class="api-desc">设置 spine 的缩放比例</div>
+          <div class="api-param"><code>scale</code> number — 缩放倍率，如 0.5 表示缩小一半</div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.setSpeed(id, speed)</div>
+          <div class="api-desc">设置 spine 动画播放速度</div>
+          <div class="api-param"><code>speed</code> number — 速度倍率，如 2 表示两倍速</div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.setPlayRange(id, from, to)</div>
+          <div class="api-desc">设置动画播放范围（百分比），实现片段循环</div>
+          <div class="api-param">
+            <code>from</code> number — 起始百分比 0-100<br>
+            <code>to</code> number — 结束百分比 0-100，必须大于 from
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.removeSpine(id)</div>
+          <div class="api-desc">移除指定 spine 并释放其 GPU 资源。id 不存在时会抛出异常</div>
+          <div class="api-param"><code>id</code> string — 要移除的 spine 标识</div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.on(id, event, callback)</div>
+          <div class="api-desc">注册 spine 事件监听器</div>
+          <div class="api-param">
+            <code>id</code> string — spine 标识<br>
+            <code>event</code> 'start' | 'interrupt' | 'end' | 'dispose' | 'complete' | 'event' — 事件类型<br>
+            <code>callback</code> function(data) — 回调函数，接收事件数据对象
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.off(id, event, callback)</div>
+          <div class="api-desc">移除指定的事件监听器（必须传入与 on 相同的回调引用）</div>
+          <div class="api-param">
+            <code>id</code> string — spine 标识<br>
+            <code>event</code> string — 事件类型<br>
+            <code>callback</code> function — 要移除的回调函数
+          </div>
+        </div>
+
+        <div class="api-item">
+          <div class="api-sig">plugin.destroy()</div>
+          <div class="api-desc">销毁所有 spine 实例、释放 GPU 资源、移除 canvas。调用后不能再执行任何操作</div>
+          <div class="api-param">无参数</div>
+        </div>
+
+      </div>
+    </details>
+  </div>
+
+  <!-- 使用 UMD 方式引入 spine-plugin（打包时自动替换为带时间戳的版本） -->
+  <script src="./static/spine-plugin.umd.cjs"></script>
+  <script src="./main.js"></script>
+</body>
+</html>

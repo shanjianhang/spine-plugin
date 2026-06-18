@@ -576,10 +576,11 @@ export class SpinePlugin {
    */
   removeSpine(id) {
     const entry = this.spineMap.get(id);
-    if (entry) {
-      entry.state.clearListeners();
-      entry.state.clearTracks();
+    if (!entry) {
+      throw new Error(`[SpinePlugin] spine "${id}" not found, cannot remove`);
     }
+    entry.state.clearListeners();
+    entry.state.clearTracks();
     this.spineMap.delete(id);
     this.listeners.delete(id);
   }
